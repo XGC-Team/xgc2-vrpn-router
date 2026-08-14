@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 UBUNTU_VERSION="${UBUNTU_VERSION:-20.04}"
-DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu:${UBUNTU_VERSION}}"
+DOCKER_IMAGE="${DOCKER_IMAGE:-}"
 WORK_DIR="${WORK_DIR:-${REPO_ROOT}/.work/docker-${UBUNTU_VERSION}}"
 OUTPUT_DIR="${OUTPUT_DIR:-${REPO_ROOT}/debs}"
 INSTALL_CHECK="${INSTALL_CHECK:-true}"
@@ -16,7 +16,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --ubuntu-version)
       UBUNTU_VERSION="$2"
-      DOCKER_IMAGE="ubuntu:${UBUNTU_VERSION}"
       shift 2
       ;;
     --image)
@@ -51,20 +50,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "${UBUNTU_VERSION}" in
-  20.04)
-    PACKAGE_DISTRIBUTION="focal"
-    ;;
-  22.04)
-    PACKAGE_DISTRIBUTION="jammy"
-    ;;
-  24.04)
-    PACKAGE_DISTRIBUTION="noble"
-    ;;
+  20.04) PACKAGE_DISTRIBUTION="focal" ;;
+  22.04) PACKAGE_DISTRIBUTION="jammy" ;;
+  24.04) PACKAGE_DISTRIBUTION="noble" ;;
   *)
     echo "unsupported Ubuntu version: ${UBUNTU_VERSION}" >&2
     exit 1
     ;;
 esac
+if [[ -z "${DOCKER_IMAGE}" ]]; then
+  DOCKER_IMAGE="ghcr.io/xgc-team/xgc2-images/xgc2-build-${PACKAGE_DISTRIBUTION}-dev:1.0.0"
+fi
 
 mkdir -p "${WORK_DIR}" "${OUTPUT_DIR}"
 
@@ -84,19 +80,15 @@ docker run --rm \
     set -euo pipefail
 
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update
-    apt-get install -y --no-install-recommends \
-      build-essential \
-      ca-certificates \
-      cmake \
-      dpkg-dev \
-      fakeroot \
-      file \
-      git \
-      ninja-build \
-      pkg-config \
-      rsync \
-      systemd
+    for pkg in \
+      build-essential ca-certificates cmake dpkg-dev fakeroot file git \
+      ninja-build pkg-config rsync
+    do
+      if ! dpkg -s "${pkg}" >/dev/null 2>&1; then
+        echo "image is missing ${pkg}; use xgc2-build-*-dev" >&2
+        exit 1
+      fi
+    done
 
     rm -rf \
       /workspace/work/src \
@@ -143,7 +135,7 @@ docker run --rm \
       --distro "${PACKAGE_DISTRIBUTION}"
 
     if [[ "${INSTALL_CHECK}" == "true" ]]; then
-      apt-get install -y /workspace/out/xgc2-vrpn-router_*.deb
+      dpkg -i /workspace/out/xgc2-vrpn-router_*.deb
       /workspace/vrpn-router/.xgc2/scripts/check_installed_package.sh
     fi
 
