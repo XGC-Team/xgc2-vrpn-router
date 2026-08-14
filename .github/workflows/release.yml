@@ -118,8 +118,6 @@ jobs:
           git diff --check HEAD
           .xgc2/scripts/check_package_compliance.sh
           if [[ "${{ inputs.run_cpp_quality }}" == "true" ]]; then
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends clang-format
             find src -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0 |
               xargs -0 clang-format --dry-run --Werror
           fi
