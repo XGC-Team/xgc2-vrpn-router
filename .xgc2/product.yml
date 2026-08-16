@@ -1,7 +1,7 @@
 schema: xgc2.product.v1
 id: xgc2-vrpn-router
 name: XGC2 VRPN Router
-version: 0.1.0-9
+version: 0.1.0-10
 kind: toolchain-apt
 summary: Protocol-level VRPN tracker relay packaged as a native Debian executable
   for Ubuntu 20.04, 22.04, and 24.04.
@@ -30,9 +30,9 @@ usage:
     '
 release:
   apt_versions:
-    focal: 0.1.0-9+focal
-    jammy: 0.1.0-9+jammy
-    noble: 0.1.0-9+noble
+    focal: 0.1.0-10+focal
+    jammy: 0.1.0-10+jammy
+    noble: 0.1.0-10+noble
 ownership:
   paths:
   - /usr/bin/xgc2-vrpn-router
