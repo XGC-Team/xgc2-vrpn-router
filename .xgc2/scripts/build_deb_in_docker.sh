@@ -135,7 +135,8 @@ docker run --rm \
       --distro "${PACKAGE_DISTRIBUTION}"
 
     if [[ "${INSTALL_CHECK}" == "true" ]]; then
-      dpkg -i /workspace/out/xgc2-vrpn-router_*.deb
+      apt-get update
+      apt-get install -y --no-install-recommends /workspace/out/xgc2-vrpn-router_*.deb
       /workspace/vrpn-router/.xgc2/scripts/check_installed_package.sh
     fi
 

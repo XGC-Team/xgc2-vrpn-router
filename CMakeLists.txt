@@ -11,9 +11,10 @@ set(VRPN_ROOT "" CACHE PATH "Optional VRPN install prefix")
 find_path(VRPN_INCLUDE_DIR vrpn_Tracker.h HINTS "${VRPN_ROOT}/include")
 find_library(VRPN_SERVER_LIBRARY NAMES vrpnserver HINTS "${VRPN_ROOT}/lib" "${VRPN_ROOT}/lib64")
 find_library(QUAT_LIBRARY NAMES quat HINTS "${VRPN_ROOT}/lib" "${VRPN_ROOT}/lib64")
+find_library(LIBUSB_LIBRARY NAMES usb-1.0)
 
-if(NOT VRPN_INCLUDE_DIR OR NOT VRPN_SERVER_LIBRARY)
-  message(FATAL_ERROR "VRPN server headers/library not found. Set VRPN_ROOT to a VRPN install prefix.")
+if(NOT VRPN_INCLUDE_DIR OR NOT VRPN_SERVER_LIBRARY OR NOT LIBUSB_LIBRARY)
+  message(FATAL_ERROR "VRPN server headers/library or libusb-1.0 not found. Set VRPN_ROOT to a VRPN install prefix.")
 endif()
 
 add_executable(xgc2-vrpn-router src/main.cpp)
@@ -22,6 +23,7 @@ target_link_libraries(xgc2-vrpn-router PRIVATE ${VRPN_SERVER_LIBRARY} Threads::T
 if(QUAT_LIBRARY)
   target_link_libraries(xgc2-vrpn-router PRIVATE ${QUAT_LIBRARY})
 endif()
+target_link_libraries(xgc2-vrpn-router PRIVATE ${LIBUSB_LIBRARY})
 
 install(TARGETS xgc2-vrpn-router RUNTIME DESTINATION bin)
 install(FILES config/router.conf DESTINATION share/xgc2-vrpn-router)
