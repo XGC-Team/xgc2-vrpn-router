@@ -63,7 +63,8 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare build manifest directory
-        run: install -d "$GITHUB_WORKSPACE/.ci/build-manifests"
+        run: |
+          install -d "$GITHUB_WORKSPACE/.ci/build-manifests"
 
       - name: Run clang-format style check on src directory
         run: |
