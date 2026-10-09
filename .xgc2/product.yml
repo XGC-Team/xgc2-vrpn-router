@@ -1,10 +1,9 @@
 schema: xgc2.product.v1
 id: xgc2-vrpn-router
 name: XGC2 VRPN Router
-version: 0.1.0-10
+version: 0.1.0-11
 kind: toolchain-apt
-summary: Protocol-level VRPN tracker relay packaged as a native Debian executable
-  for Ubuntu 20.04, 22.04, and 24.04.
+summary: Protocol-level VRPN tracker relay packaged as a native Debian executable for Ubuntu 20.04, 22.04, and 24.04.
 apt:
   distribution: focal,jammy,noble
   install:
@@ -17,6 +16,7 @@ apt:
   - libstdc++6
   - netbase
   - systemd
+  - libxgc2-xrpc1 (>= 0.1.0-1~)
 usage:
   install: 'sudo apt update
 
@@ -25,16 +25,20 @@ usage:
     '
   smoke_test: 'command -v xgc2-vrpn-router
 
-    xgc2-vrpn-router --check-config --config /etc/xgc2/vrpn-router/router.conf
+    xgc2-vrpn-router --check-config --bootstrap-input /run/xgc2/vrpn-router/bootstrap-input.json
 
     '
 release:
   apt_versions:
-    focal: 0.1.0-10+focal
-    jammy: 0.1.0-10+jammy
-    noble: 0.1.0-10+noble
+    focal: 0.1.0-11+focal
+    jammy: 0.1.0-11+jammy
+    noble: 0.1.0-11+noble
+  requires:
+  - xgc2-xrpc
+  dependency_policy:
+    xgc2-xrpc: rebuild
 ownership:
   paths:
   - /usr/bin/xgc2-vrpn-router
-  - /etc/xgc2/vrpn-router/router.conf
+  - /usr/share/xgc2-vrpn-router/router.json
   - /lib/systemd/system/xgc2-vrpn-router.service

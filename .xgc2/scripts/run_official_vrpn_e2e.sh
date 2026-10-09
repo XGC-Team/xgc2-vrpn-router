@@ -4,8 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-VRPN_VERSION="${VRPN_VERSION:-v07.36}"
-VRPN_SOURCE=""
+VRPN_PREFIX="${VRPN_OFFICIAL_PREFIX:-/opt/xgc2/vrpn-official}"
 WORK_DIR="${WORK_DIR:-${REPO_ROOT}/.work/official-vrpn-e2e}"
 ROUTER_BINARY="${ROUTER_BINARY:-${REPO_ROOT}/build/xgc2-vrpn-router}"
 UPSTREAM_PORT="${UPSTREAM_PORT:-43883}"
@@ -15,12 +14,8 @@ TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-12}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --vrpn-source)
-      VRPN_SOURCE="$2"
-      shift 2
-      ;;
-    --vrpn-version)
-      VRPN_VERSION="$2"
+    --vrpn-prefix)
+      VRPN_PREFIX="$2"
       shift 2
       ;;
     --work-dir)
@@ -60,34 +55,10 @@ if [[ ! -x "${ROUTER_BINARY}" ]]; then
 fi
 
 mkdir -p "${WORK_DIR}"
-if [[ -z "${VRPN_SOURCE}" ]]; then
-  VRPN_SOURCE="${WORK_DIR}/vrpn-src"
-  if [[ ! -d "${VRPN_SOURCE}/.git" ]]; then
-    rm -rf "${VRPN_SOURCE}"
-    git clone --depth 1 --branch "${VRPN_VERSION}" https://github.com/vrpn/vrpn.git "${VRPN_SOURCE}"
-  fi
-fi
-
-VRPN_BUILD="${WORK_DIR}/vrpn-build"
-rm -rf "${VRPN_BUILD}"
-
-cmake -S "${VRPN_SOURCE}" -B "${VRPN_BUILD}" \
-  -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DBUILD_TESTING=OFF \
-  -DVRPN_INSTALL=OFF \
-  -DVRPN_BUILD_CLIENTS=ON \
-  -DVRPN_BUILD_SERVERS=ON \
-  -DVRPN_BUILD_CLIENT_LIBRARY=ON \
-  -DVRPN_BUILD_SERVER_LIBRARY=ON \
-  -DVRPN_BUILD_PYTHON=OFF \
-  -DVRPN_BUILD_PYTHON_HANDCODED_2X=OFF \
-  -DVRPN_BUILD_PYTHON_HANDCODED_3X=OFF \
-  -DVRPN_BUILD_JAVA=OFF
-cmake --build "${VRPN_BUILD}" --target vrpn_server vrpn_print_devices
-
-VRPN_SERVER="${VRPN_BUILD}/server_src/vrpn_server"
-VRPN_PRINT_DEVICES="${VRPN_BUILD}/client_src/vrpn_print_devices"
+# The original independent official peer gate consumes managed binaries.
+# Products never fetch or compile third-party VRPN sources.
+VRPN_SERVER="${VRPN_PREFIX}/bin/vrpn_server"
+VRPN_PRINT_DEVICES="${VRPN_PREFIX}/bin/vrpn_print_devices"
 test -x "${VRPN_SERVER}"
 test -x "${VRPN_PRINT_DEVICES}"
 
@@ -99,20 +70,13 @@ cat > "${RUN_DIR}/vrpn.cfg" <<EOF
 vrpn_Tracker_NULL ${TRACKER_NAME} 2 30.0
 EOF
 
-cat > "${RUN_DIR}/router.conf" <<EOF
-[General]
-UpstreamHost = 127.0.0.1
-UpstreamPort = ${UPSTREAM_PORT}
-BindAddress = 127.0.0.1
-ListenPort = ${ROUTER_PORT}
-MainloopRate = 500
-UpstreamUpdateRate = 30
-
-[Tracker ${TRACKER_NAME}]
-Upstream = ${TRACKER_NAME}
-Downstream = ${TRACKER_NAME}
-Sensors = 2
-EOF
+python3 - "${RUN_DIR}" "${UPSTREAM_PORT}" "${ROUTER_PORT}" "${TRACKER_NAME}" <<'PYINPUT'
+import json, pathlib, sys
+root=pathlib.Path(sys.argv[1]); up,down=map(int,sys.argv[2:4]); tracker=sys.argv[4]
+application={'schema_version':1,'upstream_host':'127.0.0.1','upstream_port':up,'bind_address':'127.0.0.1','listen_port':down,'mainloop_rate_hz':500,'upstream_update_rate_hz':30,'forwarding_enabled':True,'mappings':[{'upstream':tracker,'downstream':tracker,'sensors':2}]}
+binding={'schema_version':1,'target_id':'official-interop','service':'xgc2.vrpn-router','api_version':'1','profile':'http.v1','endpoint':{'kind':'unix','address':str(root.resolve()/'management.sock')},'runtime_grant':'runtime','authentication':'local_private','secret_handles':{},'storage_grants':[]}
+p=root/'bootstrap-input.json';p.write_text(json.dumps({'schema_version':1,'binding':binding,'grants':{},'application':application}));p.chmod(0o600)
+PYINPUT
 
 pids=()
 cleanup() {
@@ -131,7 +95,7 @@ trap cleanup EXIT
 pids+=("$!")
 sleep 1
 
-"${ROUTER_BINARY}" --config "${RUN_DIR}/router.conf" \
+"${ROUTER_BINARY}" --bootstrap-input "${RUN_DIR}/bootstrap-input.json" \
   >"${RUN_DIR}/router.log" 2>&1 &
 pids+=("$!")
 sleep 1

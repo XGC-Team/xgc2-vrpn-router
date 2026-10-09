@@ -13,7 +13,7 @@ required_files=(
   ".github/workflows/ci.yml"
   ".github/workflows/release.yml"
   "CMakeLists.txt"
-  "config/router.conf"
+  "config/router.json"
   "systemd/xgc2-vrpn-router.service"
   "src/main.cpp"
 )
@@ -37,10 +37,8 @@ done
 grep -q '^id:[[:space:]]*xgc2-vrpn-router$' .xgc2/product.yml
 product_version="$(awk -F': *' '/^version:/ {print $2; exit}' .xgc2/product.yml)"
 [[ "${product_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$ ]]
-grep -q '/etc/xgc2/vrpn-router/router.conf' .xgc2/product.yml
-grep -q 'ExecStart=/usr/bin/xgc2-vrpn-router --config /etc/xgc2/vrpn-router/router.conf' \
-  systemd/xgc2-vrpn-router.service
-grep -q '\[General\]' config/router.conf
-grep -q '\[Tracker ' config/router.conf
+grep -q '/usr/share/xgc2-vrpn-router/router.json' .xgc2/product.yml
+grep -q 'ExecStart=/usr/bin/xgc2-vrpn-router --bootstrap-input /etc/xgc2/vrpn-router/bootstrap.json' systemd/xgc2-vrpn-router.service
+python3 -c 'import json; d=json.load(open("config/router.json")); assert d["schema_version"] == 1; assert isinstance(d["mappings"], list)'
 
 git diff --check

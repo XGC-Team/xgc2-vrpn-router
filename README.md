@@ -7,11 +7,13 @@ indexes, quaternion values and source timestamps retain the native VRPN format.
 It has no ROS dependency or ROS topics.
 
 Build with the installed shared C++ XRPC HTTP/bootstrap/diagnostics SDK,
-JsonCpp, c-ares 1.34.8 and the pinned native VRPN profile in
-`dependency/sources.lock.json`. The original dependency builder and profile
-patch remain explicit isolated build inputs; the application has no source SDK
-fallback. Use `VRPN_ROOT` and the normal CMake prefix path for existing installed
-native dependencies. Standard CMake build, CTest and install entrypoints apply.
+JsonCpp, c-ares 1.34.8 and the pinned native VRPN profile supplied by the
+versioned XGC2 build images. Images own the third-party source lock, bounded
+progress patch and dependency build. The product builder verifies the installed
+profile marker at `/opt/xgc2/vrpn-native` and consumes the separate pristine
+official peers at `/opt/xgc2/vrpn-official`. Use `VRPN_ROOT` and the normal CMake
+prefix path for those installed dependencies. Standard CMake build, CTest and
+install entrypoints apply.
 
 The only runtime input is:
 

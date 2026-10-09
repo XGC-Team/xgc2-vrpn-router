@@ -63,12 +63,11 @@ rm -f "${OUTPUT_DIR}/${PACKAGE}_"*.deb
 pkg_root="${BUILD_DIR}/${PACKAGE}"
 mkdir -p \
   "${pkg_root}/DEBIAN" \
-  "${pkg_root}/etc/xgc2/vrpn-router" \
   "${pkg_root}/usr/share/doc/${PACKAGE}"
 
 for path in \
   /usr/bin/xgc2-vrpn-router \
-  /usr/share/xgc2-vrpn-router/router.conf \
+  /usr/share/xgc2-vrpn-router/router.json \
   /lib/systemd/system/xgc2-vrpn-router.service \
   /usr/lib/systemd/system/xgc2-vrpn-router.service; do
   if [[ -e "${INSTALL_ROOT}${path}" ]]; then
@@ -82,8 +81,8 @@ if [[ ! -x "${pkg_root}/usr/bin/xgc2-vrpn-router" ]]; then
   exit 1
 fi
 
-if [[ ! -f "${pkg_root}/usr/share/xgc2-vrpn-router/router.conf" ]]; then
-  echo "missing installed /usr/share/xgc2-vrpn-router/router.conf" >&2
+if [[ ! -f "${pkg_root}/usr/share/xgc2-vrpn-router/router.json" ]]; then
+  echo "missing installed /usr/share/xgc2-vrpn-router/router.json" >&2
   exit 1
 fi
 
@@ -93,20 +92,15 @@ if [[ ! -f "${pkg_root}/lib/systemd/system/xgc2-vrpn-router.service" &&
   exit 1
 fi
 
-cp -a \
-  "${pkg_root}/usr/share/xgc2-vrpn-router/router.conf" \
-  "${pkg_root}/etc/xgc2/vrpn-router/router.conf"
-
 find "${pkg_root}" -type d -exec chmod 0755 {} +
 find "${pkg_root}" -type f -exec chmod 0644 {} +
 chmod 0755 "${pkg_root}/usr/bin/xgc2-vrpn-router"
 strip --strip-unneeded "${pkg_root}/usr/bin/xgc2-vrpn-router" 2>/dev/null || true
 
-depends="libc6, libgcc-s1, libstdc++6, netbase, systemd"
-(
-  cd "${BUILD_DIR}"
-  mkdir -p debian
-  cat > debian/control <<EOF
+# All shared-library dependencies come from the actual installed executable.
+# Missing image shlibs metadata fails the original package gate.
+mkdir -p "${BUILD_DIR}/debian"
+cat > "${BUILD_DIR}/debian/control" <<EOF
 Source: ${PACKAGE}
 Section: net
 Priority: optional
@@ -115,17 +109,12 @@ Standards-Version: 4.6.0
 
 Package: ${PACKAGE}
 Architecture: any
-Depends: \${shlibs:Depends}, \${misc:Depends}
 Description: XGC2 VRPN router
- Protocol-level VRPN tracker relay.
+ Native XRPC management and VRPN tracker relay.
 EOF
-  if dpkg-shlibdeps -O "${pkg_root}/usr/bin/xgc2-vrpn-router" > shlibs 2>/dev/null; then
-    shlibs_depends="$(sed -n 's/^shlibs:Depends=//p' shlibs)"
-    if [[ -n "${shlibs_depends}" ]]; then
-      depends="${shlibs_depends}, netbase, systemd"
-    fi
-  fi
-)
+shlibs_depends="$(cd "${BUILD_DIR}" && dpkg-shlibdeps -O "${pkg_root}/usr/bin/xgc2-vrpn-router" | sed -n "s/^shlibs:Depends=//p")"
+[[ -n "${shlibs_depends}" ]] || { echo "missing actual shared-library dependencies" >&2; exit 1; }
+depends="${shlibs_depends}, netbase, systemd"
 
 cat > "${pkg_root}/DEBIAN/control" <<EOF
 Package: ${PACKAGE}
@@ -138,10 +127,6 @@ Depends: ${depends}
 Description: XGC2 VRPN router
  Protocol-level VRPN tracker relay. It connects to one upstream VRPN server
  as a client and exposes configured trackers through a local VRPN server.
-EOF
-
-cat > "${pkg_root}/DEBIAN/conffiles" <<EOF
-/etc/xgc2/vrpn-router/router.conf
 EOF
 
 cat > "${pkg_root}/DEBIAN/postinst" <<'EOF'
@@ -191,13 +176,14 @@ Installed command:
   xgc2-vrpn-router
 
 Default configuration:
-  /etc/xgc2/vrpn-router/router.conf
+  /usr/share/xgc2-vrpn-router/router.json (application domain example)
 
 Systemd unit:
   xgc2-vrpn-router.service
 
 The package installs the service unit but does not enable or start it by default.
-After editing the configuration, enable it with:
+The deployment owner supplies /etc/xgc2/vrpn-router/bootstrap.json, a private
+BootstrapInput whose application is the router domain JSON. Then enable with:
   systemctl enable --now xgc2-vrpn-router.service
 EOF
 
