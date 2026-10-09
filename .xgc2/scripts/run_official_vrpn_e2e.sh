@@ -64,7 +64,7 @@ test -x "${VRPN_PRINT_DEVICES}"
 
 RUN_DIR="${WORK_DIR}/run"
 rm -rf "${RUN_DIR}"
-mkdir -p "${RUN_DIR}"
+mkdir -m 0700 -p "${RUN_DIR}"
 
 cat > "${RUN_DIR}/vrpn.cfg" <<EOF
 vrpn_Tracker_NULL ${TRACKER_NAME} 2 30.0

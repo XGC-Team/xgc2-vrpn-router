@@ -15,7 +15,6 @@ apt:
   - libgcc-s1
   - libstdc++6
   - netbase
-  - systemd
   - libxgc2-xrpc1 (>= 0.1.0-1~)
 usage:
   install: 'sudo apt update

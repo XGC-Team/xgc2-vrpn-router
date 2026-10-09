@@ -108,7 +108,8 @@ docker run --rm \
     printf "deb [signed-by=/etc/apt/keyrings/xgc2-archive-keyring.gpg] %s %s main\n" \
       "${source_url%/}" "${PACKAGE_DISTRIBUTION}" > /etc/apt/sources.list.d/xgc2.list
     apt-get update -o Dir::Etc::sourcelist=/etc/apt/sources.list.d/xgc2.list -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
-    apt-get install -y --no-install-recommends "libxgc2-xrpc-dev=0.1.0-1~${PACKAGE_DISTRIBUTION}"
+    distribution="${PACKAGE_DISTRIBUTION}"
+    apt-get install -y --no-install-recommends "libxgc2-xrpc-dev=0.1.0-1~${distribution}"
     rm -rf /workspace/work/src /workspace/work/build /workspace/work/install-root
 
     mkdir -p /workspace/work/src

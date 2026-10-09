@@ -114,7 +114,8 @@ Description: XGC2 VRPN router
 EOF
 shlibs_depends="$(cd "${BUILD_DIR}" && dpkg-shlibdeps -O "${pkg_root}/usr/bin/xgc2-vrpn-router" | sed -n "s/^shlibs:Depends=//p")"
 [[ -n "${shlibs_depends}" ]] || { echo "missing actual shared-library dependencies" >&2; exit 1; }
-depends="${shlibs_depends}, netbase, systemd"
+# The service unit is optional; existing maintainer scripts guard systemctl.
+depends="${shlibs_depends}, netbase"
 
 cat > "${pkg_root}/DEBIAN/control" <<EOF
 Package: ${PACKAGE}
