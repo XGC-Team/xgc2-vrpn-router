@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/xgc2-vrpn-router --config /etc/xgc2/vrpn-router/router.conf
+ExecStart=/usr/bin/xgc2-vrpn-router --bootstrap-input /etc/xgc2/vrpn-router/bootstrap.json
 Restart=on-failure
 RestartSec=2
 

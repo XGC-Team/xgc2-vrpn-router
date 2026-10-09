@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "upstream_host": "127.0.0.1",
+  "upstream_port": 3883,
+  "bind_address": "127.0.0.1",
+  "listen_port": 3884,
+  "mainloop_rate_hz": 240,
+  "upstream_update_rate_hz": 120,
+  "forwarding_enabled": true,
+  "mappings": [
+    {"upstream": "uav1", "downstream": "uav1", "sensors": 1},
+    {"upstream": "ugv1", "downstream": "ugv1", "sensors": 1}
+  ]
+}
