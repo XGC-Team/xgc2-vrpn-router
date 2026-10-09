@@ -80,11 +80,14 @@ void Runtime::work() noexcept {
             while (!stop_) {
                 router.tick();
                 publish(router);
-                if (router.listening() && router.upstream_connected()) break;
-                if (Clock::now() >= startup_deadline) throw std::runtime_error("native upstream connect deadline expired");
+                if (router.listening() && router.upstream_connected())
+                    break;
+                if (Clock::now() >= startup_deadline)
+                    throw std::runtime_error("native upstream connect deadline expired");
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }
-            if (stop_) throw std::runtime_error("native startup cancelled");
+            if (stop_)
+                throw std::runtime_error("native startup cancelled");
             {
                 std::lock_guard lock(mutex_);
                 snapshot_.state = NativeState::Ready;

@@ -66,10 +66,10 @@ Json::Value Service::describe() const {
     Json::Value value(Json::objectValue);
     value["service_ref"] = service_ref_;
     const auto snapshot = router_.snapshot();
-    value["lifecycle"] = draining_                                 ? "draining"
-                         : snapshot.state == NativeState::Starting ? "starting"
-                         : snapshot.state == NativeState::Ready    ? "ready"
-                                                                   : "failed";
+    value["lifecycle"] = draining_ ? "draining"
+                                   : snapshot.state == NativeState::Starting
+                                         ? "starting"
+                                         : snapshot.state == NativeState::Ready ? "ready" : "failed";
     value["capabilities"] = parse_json(R"({"data_plane":"vrpn.tracker", "online_configuration":true,
         "persistent_configuration":false,"online_mappings":false,"online_listener":false,
         "runtime_policy":true,"local_private":true,"remote_tls":false})");
@@ -115,10 +115,10 @@ Json::Value Service::health() const {
     const auto& config = router_.initial_config();
     const bool stale = millis(snapshot.source_time, now) > 1000;
     Json::Value value(Json::objectValue);
-    value["lifecycle"] = draining_                                 ? "draining"
-                         : snapshot.state == NativeState::Starting ? "starting"
-                         : snapshot.state == NativeState::Ready    ? "ready"
-                                                                   : "failed";
+    value["lifecycle"] = draining_ ? "draining"
+                                   : snapshot.state == NativeState::Starting
+                                         ? "starting"
+                                         : snapshot.state == NativeState::Ready ? "ready" : "failed";
     value["uptime_ms"] = millis(started_, now);
     value["source_age_ms"] = millis(snapshot.source_time, now);
     value["source_stale"] = stale;
@@ -138,15 +138,19 @@ Json::Value Service::health() const {
         all_received &= pose.received != 0;
         all_fresh &= pose.received && millis(pose.last_received, now) <= 1000;
     }
-    const char* status = stale                                     ? "native_stalled"
-                         : snapshot.state == NativeState::Starting ? "starting"
-                         : snapshot.state != NativeState::Ready    ? "native_failed"
-                         : !snapshot.listening                     ? "listener_failed"
-                         : !snapshot.forwarding_enabled            ? "paused"
-                         : !snapshot.upstream_connected            ? "upstream_disconnected"
-                         : !all_received                           ? "waiting_for_samples"
-                         : !all_fresh                              ? "stale"
-                                                                   : "streaming";
+    const char* status = stale ? "native_stalled"
+                               : snapshot.state == NativeState::Starting
+                                     ? "starting"
+                                     : snapshot.state != NativeState::Ready
+                                           ? "native_failed"
+                                           : !snapshot.listening
+                                                 ? "listener_failed"
+                                                 : !snapshot.forwarding_enabled
+                                                       ? "paused"
+                                                       : !snapshot.upstream_connected
+                                                             ? "upstream_disconnected"
+                                                             : !all_received ? "waiting_for_samples"
+                                                                             : !all_fresh ? "stale" : "streaming";
     value["domain_status"] = status;
     value["forwarding_enabled"] = snapshot.forwarding_enabled;
     if (host_) {

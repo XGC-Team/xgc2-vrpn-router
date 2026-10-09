@@ -1,9 +1,9 @@
 #include "application.hpp"
 #include <algorithm>
-#include <csignal>
-#include <cstdlib>
 #include <array>
 #include <cctype>
+#include <csignal>
+#include <cstdlib>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -36,25 +36,22 @@ Json::Value reference_json(const xgc2::xrpc::ServiceRef& ref) {
 bool authorization_name(std::string_view name) {
     constexpr std::string_view expected = "authorization";
     return name.size() == expected.size() &&
-           std::equal(name.begin(), name.end(), expected.begin(), [](unsigned char a, unsigned char b) {
-               return std::tolower(a) == b;
-           });
+           std::equal(name.begin(), name.end(), expected.begin(),
+                      [](unsigned char a, unsigned char b) { return std::tolower(a) == b; });
 }
 } // namespace
 
-int run(Config config, const xgc2::xrpc::BootstrapInput& bootstrap,
-        const xgc2::xrpc::RuntimePolicy& policy) {
+int run(Config config, const xgc2::xrpc::BootstrapInput& bootstrap, const xgc2::xrpc::RuntimePolicy& policy) {
     const auto& binding = bootstrap.binding();
-    if (binding.service() != "xgc2.vrpn-router" || binding.api_version() != "1" ||
-        binding.profile() != "http.v1" || binding.endpoint().kind != "unix" ||
-        binding.authentication() != "local_private" || !binding.storage_grants().empty())
+    if (binding.service() != "xgc2.vrpn-router" || binding.api_version() != "1" || binding.profile() != "http.v1" ||
+        binding.endpoint().kind != "unix" || binding.authentication() != "local_private" ||
+        !binding.storage_grants().empty())
         throw std::invalid_argument("local-private VRPN router HTTP v1 binding required");
     const auto runtime = bootstrap.resolve_runtime([](const auto&, const auto& owner) {
         const auto& path = owner.endpoint().address;
-        OwnedFd directory(::open(path.substr(0, path.rfind('/')).c_str(),
-                                 O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW));
-        return xgc2::xrpc::DirectoryGrant::from_owned_directory(directory.value,
-                                                               xgc2::xrpc::GrantPurpose::Runtime);
+        OwnedFd directory(
+            ::open(path.substr(0, path.rfind('/')).c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW));
+        return xgc2::xrpc::DirectoryGrant::from_owned_directory(directory.value, xgc2::xrpc::GrantPurpose::Runtime);
     });
     OwnedFd retained_parent(runtime.duplicate_fd());
     xgc2::xrpc::UnixOptions endpoint;
